@@ -74,3 +74,10 @@
 
 - As senhas guardadas hoje ficam em **texto puro** no Mongo (`src/index.js`). Na versão web isso
   fica mais exposto — planejar **criptografia reversível** (diferente do hash da senha mestra).
+
+
+A partir de agora, em qualquer sessão nova, basta dizer algo como:
+
+"Claude, leia meu roteiro de estudos"  ou  "relembre meu plano de estudos"
+
+que eu vou saber que ele existe e abrir o ESTUDOS.md direto. Também vou já retomar com o contexto do projeto sem você precisar reexplicar.
