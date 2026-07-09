@@ -12,12 +12,12 @@ const saveNewPassword = (password) =>
 
 const compareHashedPassword = async (password) => 
     {
-        await bcrypt.compare(password, mockDB.hash);
+        return await bcrypt.compare(password, mockDB.hash);
     }
 
 const promptNewPassword = () => 
     {
-        const response = prompt("digite sua senha de acesso nova");
+        const response = prompt("digite sua senha de acesso nova: ");
         return saveNewPassword(response);
     }
 
@@ -30,7 +30,7 @@ const promptOldPassword = async () =>
                     const result = await compareHashedPassword(response);
                     if (result) 
                         {
-                            console.log("Password verified.")
+                            console.log("senha correta.")
                             verified = true;
                             showMenu();
                         } else {
@@ -39,3 +39,49 @@ const promptOldPassword = async () =>
                 };
             
     }; 
+
+    const showMenu = async () => 
+        {
+            console.log(`
+            1. Ver senhas
+            2. Salvar nova senha
+            3. Verificar senha
+            4. Sair    
+                `);
+            const response = prompt(">")
+
+            if (response === "1") viewPasswords();
+            else if (response === "2") promptManageNewPassword();
+            else if (response === "3") promptOldPassword();
+            else if (response === "4") process.exit();
+            else {
+                console.log(`That' s an invalid response.`);
+                showMenu();
+            }
+        };
+
+        const viewPasswords = () => 
+            {
+                const {passwords} = mockDB;
+                Object.entries(passwords).forEach(([key, value], index) => {
+                    console.log(`${index + 1}. ${key} => ${value}`);
+                });
+                showMenu()
+            }
+
+        const promptManageNewPassword = () => {
+            const source = prompt("enter name for password: ");
+            const password = prompt("enter password to save: ");
+
+            mockDB.passwords[source] = password;
+            console.log(`Password for ${source} has been saved!`);
+            showMenu()
+        };
+
+        if (!mockDB.hash) 
+            {
+            promptNewPassword()
+            } else 
+                {
+                    promptOldPassword();
+                }
