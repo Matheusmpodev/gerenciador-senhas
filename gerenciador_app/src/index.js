@@ -1,18 +1,20 @@
 import bcrypt from "bcrypt";
 import promptModule from "prompt-sync"
 const prompt = promptModule();
-const mockDB = { passwords: {}};
 
-const saveNewPassword = (password) => 
+
+const saveNewPassword = async (password) => 
 {
-    mockDB.hash = bcrypt.hashSync(password, 10);
+    const hash = bcrypt.hashSync(password, 10);
+    await authCollection.insertOne({"type": "auth", hash})//mesma coisa de ({"type": "auth", hash: hash})
     console.log("sua senha foi salva");
     showMenu();
 }
 
 const compareHashedPassword = async (password) => 
     {
-        return await bcrypt.compare(password, mockDB.hash);
+        const { hash } = await authCollection.findOne({ "type": "auth"})
+        return await bcrypt.compare(password, hash);
     }
 
 const promptNewPassword = () => 
@@ -50,38 +52,72 @@ const promptOldPassword = async () =>
                 `);
             const response = prompt(">")
 
-            if (response === "1") viewPasswords();
-            else if (response === "2") promptManageNewPassword();
-            else if (response === "3") promptOldPassword();
-            else if (response === "4") process.exit();
-            else {
-                console.log(`That' s an invalid response.`);
-                showMenu();
+            switch(response) {
+                case "1": 
+                    await viewPasswords();
+                    break;
+                case "2":
+                    await promptManageNewPassword();
+                    break;
+                case "3":
+                    await promptOldPassword();
+                    break;
+                case "4":
+                    process.exit()
+                default:
+                    console.log(`resposta invalida`);
+                    await showMenu();
             }
         };
 
-        const viewPasswords = () => 
+        const viewPasswords = async () => 
             {
-                const {passwords} = mockDB;
-                Object.entries(passwords).forEach(([key, value], index) => {
-                    console.log(`${index + 1}. ${key} => ${value}`);
+                const passwords = await passwordCollection.find({}).toArray();
+                passwords.forEach(({ source, password },index)=> {
+                    console.log(`${index + 1}. ${source} => ${password}`);
                 });
                 showMenu()
-            }
+            };
 
-        const promptManageNewPassword = () => {
+        const promptManageNewPassword = async () => {
             const source = prompt("enter name for password: ");
             const password = prompt("enter password to save: ");
 
-            mockDB.passwords[source] = password;
-            console.log(`Password for ${source} has been saved!`);
-            showMenu()
+            await passwordCollection.findOneAndUpdate(
+                { source },
+                { $set: { password } },
+                {
+                    ReturnDocument: "after",
+                    upsert: true,  
+                }
+         );
+         console.log(`Password for ${source} has been saved!`)
+         showMenu()
         };
 
-        if (!mockDB.hash) 
-            {
-            promptNewPassword()
-            } else 
-                {
-                    promptOldPassword();
-                }
+    import { MongoClient, ReturnDocument } from "mongodb";
+    const dbUrl = "mongodb://localhost:27017";
+    const client = new MongoClient(dbUrl);
+    let hasPasswords = false
+    let passwordCollection, authCollection;
+    const dbName = "senhas_app";
+    
+    const main = async () => {
+        try {
+            await client.connect()
+            console.log("Connected successfully to server");
+            const db = client.db(dbName);
+            authCollection = db.collection("auth");
+            passwordCollection = db.collection("passwords");
+            const hashedPassword = await authCollection.findOne({type: "auth" });
+            hasPasswords = !!hashedPassword;
+        } catch (error) {
+            console.error("Erro na conexão do database:", error);
+            process.exit(1);
+        }
+    }
+
+    await main();
+    if (!hasPasswords) {
+        promptNewPassword();
+    } else {promptOldPassword()}
