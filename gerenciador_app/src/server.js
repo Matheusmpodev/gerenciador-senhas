@@ -1,9 +1,12 @@
+import { connectDB } from "./db.js";
+import { compareHashedPassword } from "./auth.js";
 import Fastify from "fastify"
 import fastifyStatic from "@fastify/static"
 import path from "node:path";
 import { fileURLToPath } from "node:url"
 const app = Fastify();
 const port = 3000;
+const { authCollection } = await connectDB()
 
 const _dirname = path.dirname(fileURLToPath(import.meta.url));
 app.register (fastifyStatic, {
@@ -12,7 +15,7 @@ app.register (fastifyStatic, {
 
 app.post("/api/login", async (request, reply) => {
     const { senha } = request.body;
-    const ok = await compareHashedPassword(senha)
+    const ok = await compareHashedPassword(authCollection, senha)
 
     if (!ok) {
         return reply.code(401).send({ ok: false, mensagem: "senha incorreta" });
