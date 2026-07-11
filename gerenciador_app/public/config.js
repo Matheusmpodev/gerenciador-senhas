@@ -7,7 +7,6 @@ form.addEventListener("submit", async (event) => {
 
     
 const senha = input.value 
-console.log(senha)
 
 const resposta = await fetch("/api/login", {
     method: "POST",

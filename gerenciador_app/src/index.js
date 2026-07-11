@@ -1,26 +1,15 @@
-import bcrypt from "bcrypt";
+import { connectDB } from "./db.js";
+import { saveNewPassword, compareHashedPassword } from "./auth.js";  
 import promptModule from "prompt-sync"
 const prompt = promptModule();
 
 
-const saveNewPassword = async (password) => 
-{
-    const hash = bcrypt.hashSync(password, 10);
-    await authCollection.insertOne({"type": "auth", hash})//mesma coisa de ({"type": "auth", hash: hash})
-    console.log("sua senha foi salva");
-    showMenu();
-}
-
-const compareHashedPassword = async (password) => 
-    {
-        const { hash } = await authCollection.findOne({ "type": "auth"})
-        return await bcrypt.compare(password, hash);
-    }
-
-const promptNewPassword = () => 
+const promptNewPassword = async () => 
     {
         const response = prompt("digite sua senha de acesso nova: ");
-        return saveNewPassword(response);
+        await saveNewPassword(authCollection, response);
+        console.log("sua senha foi salva")
+        showMenu()
     }
 
 const promptOldPassword = async () => 
@@ -29,7 +18,7 @@ const promptOldPassword = async () =>
             while (!verified) 
                 {
                     const response = prompt("digite sua senha de acesso: ");
-                    const result = await compareHashedPassword(response);
+                    const result = await compareHashedPassword(authCollection, response);
                     if (result) 
                         {
                             console.log("senha correta.")
@@ -95,29 +84,11 @@ const promptOldPassword = async () =>
          showMenu()
         };
 
-    import { MongoClient, ReturnDocument } from "mongodb";
-    const dbUrl = "mongodb://localhost:27017";
-    const client = new MongoClient(dbUrl);
-    let hasPasswords = false
-    let passwordCollection, authCollection;
-    const dbName = "senhas_app";
     
-    const main = async () => {
-        try {
-            await client.connect()
-            console.log("Connected successfully to server");
-            const db = client.db(dbName);
-            authCollection = db.collection("auth");
-            passwordCollection = db.collection("passwords");
-            const hashedPassword = await authCollection.findOne({type: "auth" });
-            hasPasswords = !!hashedPassword;
-        } catch (error) {
-            console.error("Erro na conexão do database:", error);
-            process.exit(1);
-        }
-    }
+    const { authCollection, passwordCollection } = await connectDB();
 
-    await main();
+    const hasPasswords = !!(await authCollection.findOne({ type: "auth" }));
+
     if (!hasPasswords) {
         promptNewPassword();
     } else {promptOldPassword()}
