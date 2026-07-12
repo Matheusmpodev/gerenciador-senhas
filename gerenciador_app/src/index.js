@@ -2,6 +2,7 @@ import { connectDB } from "./db.js";
 import { saveNewPassword, compareHashedPassword } from "./auth.js";  
 import promptModule from "prompt-sync"
 const prompt = promptModule();
+import { getPasswords, savePassword } from "./passwords.js";
 
 
 const promptNewPassword = async () => 
@@ -61,7 +62,7 @@ const promptOldPassword = async () =>
 
         const viewPasswords = async () => 
             {
-                const passwords = await passwordCollection.find({}).toArray();
+                const passwords = await getPasswords(passwordCollection)
                 passwords.forEach(({ source, password },index)=> {
                     console.log(`${index + 1}. ${source} => ${password}`);
                 });
@@ -71,17 +72,9 @@ const promptOldPassword = async () =>
         const promptManageNewPassword = async () => {
             const source = prompt("enter name for password: ");
             const password = prompt("enter password to save: ");
-
-            await passwordCollection.findOneAndUpdate(
-                { source },
-                { $set: { password } },
-                {
-                    ReturnDocument: "after",
-                    upsert: true,  
-                }
-         );
-         console.log(`Password for ${source} has been saved!`)
-         showMenu()
+            await savePassword(passwordCollection, source, password);
+            console.log(`Password for ${source} has been saved!`)
+            showMenu()
         };
 
     
