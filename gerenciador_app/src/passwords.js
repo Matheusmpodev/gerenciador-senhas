@@ -11,3 +11,7 @@ export const savePassword = async (passwordCollection, source, password) =>
             { returnDocument: "after", upsert: true }
         );
     };
+
+export const deletePassword = async (passwordCollection, source) => {
+    await passwordCollection.deleteOne({ source });
+};
