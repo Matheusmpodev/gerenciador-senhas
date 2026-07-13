@@ -17,4 +17,7 @@ const resposta = await fetch("/api/login", {
 const dados = await resposta.json();
 
 mensagem.textContent = dados.mensagem;
+if (dados.ok) {
+    window.location.href = "senhas.html";
+}
 });

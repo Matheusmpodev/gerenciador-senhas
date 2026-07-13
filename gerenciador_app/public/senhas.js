@@ -6,10 +6,12 @@ const inputsource = document.getElementById("source")
 
 const respostas = await fetch("/api/passwords")
 
-const senha = await respostas.json()
+if (!respostas.ok) {
+    window.location.href = "/"
+} else {
+    const senha = await respostas.json()
 
-
-senha.forEach(({ source, password }) => {
+    senha.forEach(({ source, password }) => {
     const li = document.createElement("li");
     li.textContent = `${source} => ${password}`;
     const botao = document.createElement("button");
@@ -26,6 +28,7 @@ senha.forEach(({ source, password }) => {
     li.appendChild(botao)
     lista.appendChild(li);
 });
+}
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault()
@@ -40,4 +43,10 @@ form.addEventListener("submit", async (event) => {
     
 });
 location.reload();
-})
+});
+
+const botaoLogout = document.getElementById("logout");
+botaoLogout.addEventListener("click", async () => {
+    await fetch("/api/logout", { method: "POST" });
+    window.location.href = "/";
+});
