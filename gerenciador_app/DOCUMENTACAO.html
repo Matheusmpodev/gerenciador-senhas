@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciador de Senhas — Documentação de Estudo</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --ink: #1f2328;
+    --muted: #57606a;
+    --code-bg: #f6f8fa;
+    --quote-bg: #eef4ff;
+    --border: #d0d7de;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #fff;
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+    font-size: 16px;
+  }
+  main { max-width: 830px; margin: 0 auto; padding: 48px 32px 90px; }
+
+  h1 { font-size: 2.15rem; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .subtitle { color: var(--muted); font-size: 1.02rem; margin: 0 0 8px; }
+  h2 {
+    font-size: 1.5rem; margin: 46px 0 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  h3 { font-size: 1.18rem; margin: 30px 0 10px; color: #101418; }
+  p { margin: 12px 0; }
+  strong { font-weight: 650; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  code {
+    font-family: "SF Mono", "Consolas", "Liberation Mono", Menlo, monospace;
+    font-size: 0.86em; background: var(--code-bg);
+    padding: 0.12em 0.4em; border-radius: 4px; border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-left: 4px solid var(--accent); border-radius: 6px;
+    padding: 14px 16px; overflow-x: auto; margin: 16px 0;
+  }
+  pre code {
+    background: none; border: none; padding: 0;
+    font-size: 0.8rem; line-height: 1.55; white-space: pre;
+  }
+
+  table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 0.9rem; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; }
+
+  blockquote {
+    margin: 18px 0; padding: 10px 18px; border-left: 4px solid var(--accent);
+    background: var(--quote-bg); border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 6px 0; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 6px 0; }
+
+  .toc { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 8px 8px 4px; }
+  .toc ol { margin: 8px 0; }
+  .toc li { margin: 4px 0; }
+
+  .cover-rule { border: none; border-top: 3px solid var(--accent); margin: 14px 0 30px; width: 70px; }
+  .footer { color: var(--muted); font-size: 0.86rem; font-style: italic; }
+
+  @media print {
+    @page { margin: 18mm 15mm; }
+    body { font-size: 11.5pt; }
+    main { max-width: none; padding: 0; }
+    h1, h2, h3 { break-after: avoid; }
+    table, blockquote { break-inside: avoid; }
+    pre code { white-space: pre-wrap; word-break: break-word; }
+    a { color: var(--ink); }
+    .toc { background: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Gerenciador de Senhas</h1>
+<p class="subtitle">Documentação de Estudo — conceitos de back-end e front-end</p>
+<hr class="cover-rule">
+
+<blockquote>
+<p>Documento feito para <strong>estudar</strong> o projeto: entender como ele funciona, como rodar em outra máquina, como as rotas se comunicam, e — principalmente — <strong>as regras e conceitos</strong> por trás de cada decisão. Cada trecho de código aqui é o código real do projeto, acompanhado da explicação do <em>porquê</em>.</p>
+</blockquote>
+
+<h2 id="indice">Índice</h2>
+<nav class="toc">
+<ol>
+  <li><a href="#sec-1">O que é este projeto</a></li>
+  <li><a href="#sec-2">A grande ideia: uma lógica, várias interfaces</a></li>
+  <li><a href="#sec-3">Tecnologias usadas</a></li>
+  <li><a href="#sec-4">Estrutura de pastas e arquivos</a></li>
+  <li><a href="#sec-5">Como rodar o projeto em outra máquina</a></li>
+  <li><a href="#sec-6">A migração CLI → Web (a história)</a></li>
+  <li><a href="#sec-7">As regras de projeto (os princípios)</a></li>
+  <li><a href="#sec-8">O back-end em detalhe</a></li>
+  <li><a href="#sec-9">O front-end em detalhe</a></li>
+  <li><a href="#sec-10">Referência das rotas da API</a></li>
+  <li><a href="#sec-11">O ciclo de autenticação (sessão e cookie)</a></li>
+  <li><a href="#sec-12">Glossário de conceitos</a></li>
+  <li><a href="#sec-13">Dívidas técnicas e próximos passos</a></li>
+</ol>
+</nav>
+
+<hr>
+
+<h2 id="sec-1">1. O que é este projeto</h2>
+<p>Um <strong>gerenciador de senhas</strong> escrito em <strong>Node.js</strong>. Ele guarda pares de "nome do serviço → senha" (por exemplo <code>gmail =&gt; minhasenha123</code>) num banco de dados <strong>MongoDB</strong>, protegido por uma <strong>senha-mestra</strong> (a senha de acesso ao app).</p>
+<p>O projeto nasceu como um <strong>programa de terminal (CLI)</strong> e foi <strong>migrado para uma aplicação web</strong> completa, sem jogar o CLI fora. Hoje ele tem <strong>duas caras</strong>:</p>
+<ul>
+  <li><strong>CLI</strong> — você usa pelo terminal, navegando por um menu.</li>
+  <li><strong>Web</strong> — você usa pelo navegador, com telas de login e de senhas.</li>
+</ul>
+<p>As duas caras usam <strong>exatamente a mesma lógica</strong> por baixo. Entender <em>como</em> isso foi feito é o coração deste documento.</p>
+
+<h2 id="sec-2">2. A grande ideia: uma lógica, várias interfaces</h2>
+<p>Todo programa tem dois tipos de código misturados:</p>
+<ul>
+  <li><strong>Lógica</strong> — o que realmente acontece com os dados (buscar no banco, salvar, apagar, conferir uma senha). É a "regra de negócio".</li>
+  <li><strong>Interface</strong> — como o usuário conversa com o programa (no CLI: <code>prompt</code> e <code>console.log</code>; na web: formulários HTML e respostas HTTP).</li>
+</ul>
+<p>A decisão central do projeto foi <strong>separar essas duas coisas em arquivos diferentes</strong>. A lógica mora em módulos "neutros" que não sabem quem os está chamando. Cada interface (CLI ou web) usa esses módulos por cima.</p>
+<pre><code>        ┌──────────────────────────────────────────┐
+        │   LÓGICA NEUTRA (não sabe quem a chama)    │
+        │   db.js  ·  auth.js  ·  passwords.js       │
+        └──────────────────────────────────────────┘
+              ▲                          ▲
+              │                          │
+     ┌────────┴─────────┐      ┌─────────┴───────────┐
+     │  INTERFACE CLI   │      │  INTERFACE WEB       │
+     │  src/index.js    │      │  src/server.js       │
+     │  (prompt/console)│      │  (Fastify / HTTP)    │
+     └──────────────────┘      └─────────┬───────────┘
+                                         │
+                               ┌─────────┴───────────┐
+                               │  FRONT-END           │
+                               │  public/*.html + *.js│
+                               │  (navegador)         │
+                               └─────────────────────┘</code></pre>
+<p><strong>Consequência prática:</strong> uma senha salva pelo site cai no mesmo banco que o CLI lê. As duas interfaces são só "portas" diferentes para a mesma lógica.</p>
+
+<h2 id="sec-3">3. Tecnologias usadas</h2>
+<table>
+<thead><tr><th>Tecnologia</th><th>Para que serve no projeto</th></tr></thead>
+<tbody>
+<tr><td><strong>Node.js</strong></td><td>Executa JavaScript fora do navegador (o back-end).</td></tr>
+<tr><td><strong>ESM</strong> (<code>"type": "module"</code>)</td><td>Sistema de módulos moderno: <code>import</code> / <code>export</code>. Permite também <code>await</code> no topo do arquivo.</td></tr>
+<tr><td><strong>MongoDB</strong></td><td>Banco de dados onde as senhas e a senha-mestra ficam guardadas.</td></tr>
+<tr><td>driver <code>mongodb</code></td><td>Biblioteca que conecta o Node ao MongoDB.</td></tr>
+<tr><td><strong>Fastify</strong></td><td>Framework do servidor web (cria as rotas HTTP).</td></tr>
+<tr><td><code>@fastify/static</code></td><td>Serve os arquivos da pasta <code>public/</code> (HTML, JS) para o navegador.</td></tr>
+<tr><td><code>@fastify/cookie</code></td><td>Ensina o Fastify a ler e escrever cookies.</td></tr>
+<tr><td><code>@fastify/session</code></td><td>Gerencia sessões (o "estar logado") em cima dos cookies.</td></tr>
+<tr><td><code>bcrypt</code></td><td>Transforma a senha-mestra em um <em>hash</em> seguro (impossível de reverter).</td></tr>
+<tr><td><code>prompt-sync</code></td><td>Lê o que o usuário digita no terminal (usado só no CLI).</td></tr>
+</tbody>
+</table>
+
+<h2 id="sec-4">4. Estrutura de pastas e arquivos</h2>
+<pre><code>gerenciador_app/
+├── package.json          → dependências e config do projeto (ESM)
+├── src/                   → o back-end (roda no Node)
+│   ├── db.js             → conexão com o MongoDB
+│   ├── auth.js           → lógica da senha-mestra (bcrypt)
+│   ├── passwords.js      → lógica das senhas (CRUD)
+│   ├── index.js          → INTERFACE CLI (menu no terminal)
+│   └── server.js         → INTERFACE WEB (servidor Fastify)
+└── public/                → o front-end (roda no navegador)
+    ├── index.html        → tela de login
+    ├── config.js         → JS da tela de login
+    ├── senhas.html       → tela das senhas
+    └── senhas.js         → JS da tela das senhas</code></pre>
+<p>Repare na divisão: <strong><code>src/</code> é o que roda no servidor</strong>; <strong><code>public/</code> é o que o navegador baixa e roda</strong>. O <code>@fastify/static</code> é a ponte que entrega os arquivos de <code>public/</code> para o navegador.</p>
+
+<h2 id="sec-5">5. Como rodar o projeto em outra máquina</h2>
+<h3>Pré-requisitos</h3>
+<ol>
+  <li><strong>Node.js</strong> instalado (versão 18 ou mais nova — o projeto usa <code>import</code> e <code>await</code> no topo).</li>
+  <li><strong>MongoDB</strong> instalado e rodando localmente, em <code>mongodb://localhost:27017</code> (veja <code>src/db.js</code>).</li>
+</ol>
+<h3>Passo a passo</h3>
+<pre><code># 1. Entrar na pasta do app
+cd gerenciador_app
+
+# 2. Instalar as dependências (lê o package.json e baixa para node_modules/)
+npm install</code></pre>
+<p><strong>3. Definir a senha-mestra (bootstrap) — importante!</strong></p>
+<p>O login da web só sabe <strong>conferir</strong> a senha-mestra; ele não sabe <strong>criá-la</strong>. Quem cria a senha-mestra na primeira vez é o <strong>CLI</strong>. Então, numa máquina nova, rode o CLI primeiro:</p>
+<pre><code>node src/index.js</code></pre>
+<p>Como ainda não existe senha-mestra no banco, o programa vai pedir para você <strong>criar uma</strong>. Depois disso, ela fica salva (como <em>hash</em>) no MongoDB.</p>
+<p><strong>4. Rodar o servidor web:</strong></p>
+<pre><code>node src/server.js</code></pre>
+<p>Deve aparecer <code>servidor on em http://localhost:3000</code>.</p>
+<p><strong>5. Usar no navegador:</strong></p>
+<ul>
+  <li>Abra <strong>http://localhost:3000/</strong> → tela de login.</li>
+  <li>Digite a senha-mestra criada no passo 3.</li>
+  <li>Você é levado para <strong>http://localhost:3000/senhas.html</strong>, onde vê, adiciona e apaga senhas.</li>
+</ul>
+<blockquote><p><strong>Observação:</strong> o CLI e a web compartilham o mesmo banco. Uma senha salva num aparece no outro.</p></blockquote>
+
+<h2 id="sec-6">6. A migração CLI → Web (a história)</h2>
+<h3>Como era no começo</h3>
+<p>No início, <strong>tudo estava dentro do <code>index.js</code></strong>: o menu do terminal, os <code>prompt</code>, os <code>console.log</code> <strong>e</strong> as chamadas ao MongoDB, tudo misturado numa função só. Por exemplo, salvar uma senha era assim (versão antiga, tudo junto):</p>
+<pre><code>const promptManageNewPassword = async () =&gt; {
+    const source = prompt("enter name for password: ");     // interface: perguntar
+    const password = prompt("enter password to save: ");    // interface: perguntar
+    await passwordCollection.findOneAndUpdate(...)           // LÓGICA: salvar no banco
+    console.log(`Password for ${source} has been saved!`)   // interface: avisar
+    showMenu()                                               // interface: fluxo
+};</code></pre>
+<h3>Por que isso é um problema para a web</h3>
+<p>O servidor web <strong>não tem</strong> <code>prompt</code> nem <code>console.log</code> de terminal. Ele coleta dados do <code>request.body</code> (o corpo da requisição HTTP) e responde com JSON. Se a lógica de salvar estivesse grudada nos <code>prompt</code>, o servidor não conseguiria reaproveitá-la — ele teria que <strong>reescrever a mesma coisa</strong>. Isso é duplicação (o oposto de DRY).</p>
+<h3>O que a migração fez</h3>
+<p>A migração foi um processo de <strong>destilação</strong>: pegar a lógica de dentro do CLI e movê-la para módulos neutros, um assunto por arquivo.</p>
+<table>
+<thead><tr><th>Assunto</th><th>Saiu de dentro do CLI</th><th>Foi para o módulo</th></tr></thead>
+<tbody>
+<tr><td>Conexão com o banco</td><td><code>index.js</code></td><td><code>db.js</code></td></tr>
+<tr><td>Senha-mestra (bcrypt)</td><td><code>index.js</code></td><td><code>auth.js</code></td></tr>
+<tr><td>Senhas (ver/salvar/apagar)</td><td><code>index.js</code></td><td><code>passwords.js</code></td></tr>
+</tbody>
+</table>
+<p>Depois disso, tanto o <strong>CLI</strong> (<code>index.js</code>) quanto o <strong>servidor</strong> (<code>server.js</code>) passaram a <strong>importar</strong> essas funções. O CLI virou "só interface"; o servidor nasceu como "só interface" também. A lógica ficou num lugar só.</p>
+<h3>A regra que guiou cada mudança</h3>
+<p>Ao mover uma função para um módulo neutro, três coisas sempre aconteciam:</p>
+<ol>
+  <li>Ganhava <strong><code>export</code></strong> na frente (para poder ser importada).</li>
+  <li>O que era <strong>global virava parâmetro</strong> (ex.: <code>passwordCollection</code> deixou de ser uma variável solta e passou a ser um argumento que a função recebe).</li>
+  <li><strong>Saíam</strong> os <code>console.log</code>, os <code>prompt</code> e o <code>showMenu</code> — porque isso é interface, não lógica.</li>
+</ol>
+
+<h2 id="sec-7">7. As regras de projeto (os princípios)</h2>
+<p>Estes são os conceitos que guiaram <strong>todas</strong> as decisões. Vale decorar, porque valem para qualquer projeto, não só este.</p>
+<h3>7.1. Separar lógica de interface</h3>
+<p><strong>Lógica</strong> processa dados; <strong>interface</strong> conversa com o usuário. Elas vão em arquivos diferentes. Assim, a mesma lógica serve o CLI e a web sem ser reescrita.</p>
+<h3>7.2. A lógica recebe os dados; ela não vai atrás deles</h3>
+<p>Uma função de lógica <strong>não pergunta</strong> nada ao usuário. Ela recebe tudo pronto, por parâmetro. Quem coleta os dados é a interface:</p>
+<pre><code>// LÓGICA (passwords.js): recebe source e password prontos
+export const savePassword = async (passwordCollection, source, password) =&gt; { ... };
+
+// INTERFACE decide de onde vêm os dados:
+//   CLI       → dos prompt
+//   servidor  → do request.body</code></pre>
+<p>Isso se chama <strong>injeção de dependência por parâmetro</strong>: em vez de a função buscar a coleção do banco sozinha (variável global), ela <strong>recebe</strong> a coleção de quem a chama. Fica testável e reutilizável.</p>
+<h3>7.3. Sem efeitos colaterais nos módulos de lógica</h3>
+<p>Um "efeito colateral" é algo que a função faz além de calcular/devolver — como abrir um <code>prompt</code> ou imprimir na tela. Se <code>savePassword</code> chamasse <code>prompt</code>, o servidor tentaria abrir um prompt no terminal ao salvar via web (um bug). Por isso a lógica <strong>só</strong> mexe nos dados e <strong>devolve</strong> o resultado; mostrar/perguntar fica com a interface.</p>
+<h3>7.4. DRY — <em>Don't Repeat Yourself</em> (não se repita)</h3>
+<p>Escreva a regra <strong>uma vez</strong> e reutilize. A lógica de salvar existe <strong>uma vez</strong> (<code>savePassword</code>) e é usada pelo CLI e pela web. Se um dia a regra mudar, muda num lugar só.</p>
+<h3>7.5. Módulos ESM: <code>import</code> / <code>export</code></h3>
+<ul>
+  <li><strong><code>export</code></strong> abre uma função para fora do arquivo.</li>
+  <li><strong><code>import</code></strong> traz uma função de outro arquivo.</li>
+  <li><strong><code>export</code> nomeado</strong> (<code>export const x</code>) → importa com chaves: <code>import { x } from "./arq.js"</code>.</li>
+  <li><strong><code>export default</code></strong> → importa sem chaves: <code>import x from "./arq.js"</code>.</li>
+  <li>No ESM, o caminho precisa do <code>./</code> e da <strong>extensão</strong> <code>.js</code>: <code>import { connectDB } from "./db.js"</code>.</li>
+</ul>
+<h3>7.6. Segurança embutida nas decisões</h3>
+<ul>
+  <li><strong>Nunca guardar a senha-mestra em texto puro</strong> → ela é transformada em <em>hash</em> com <code>bcrypt</code>.</li>
+  <li><strong>Nunca desenhar dados do usuário com <code>innerHTML</code></strong> → usa-se <code>textContent</code> (evita XSS).</li>
+  <li><strong>A prova de "estar logado" mora no servidor</strong>, não no navegador (sessão + cookie).</li>
+</ul>
+
+<h2 id="sec-8">8. O back-end em detalhe</h2>
+
+<h3>8.1. <code>db.js</code> — a conexão com o banco</h3>
+<pre><code>import { MongoClient } from "mongodb";
+const dbUrl = "mongodb://localhost:27017"
+
+const client = new MongoClient(dbUrl)
+
+export const connectDB = async () =&gt; {
+    await client.connect()
+    const db = client.db("senhas_app");
+    return {
+        authCollection: db.collection("auth"),
+        passwordCollection: db.collection("passwords"),
+    };
+};</code></pre>
+<p><strong>O que faz:</strong> conecta no MongoDB e devolve <strong>duas coleções</strong> (tabelas, no vocabulário do Mongo):</p>
+<ul>
+  <li><strong><code>authCollection</code></strong> → guarda a senha-mestra (o documento com <code>type: "auth"</code>).</li>
+  <li><strong><code>passwordCollection</code></strong> → guarda as senhas dos serviços.</li>
+</ul>
+<p><strong>Conceitos:</strong></p>
+<ul>
+  <li>Uma <strong>coleção</strong> é um conjunto de <strong>documentos</strong> (objetos JSON). Cada senha é um documento <code>{ _id, source, password }</code>.</li>
+  <li><code>connectDB</code> é <code>async</code> porque falar com o banco leva tempo → quem chama usa <code>await</code>.</li>
+  <li>Devolver <code>{ authCollection, passwordCollection }</code> de uma vez permite pegar só o que precisa via <strong>desestruturação</strong>: <code>const { passwordCollection } = await connectDB()</code>.</li>
+</ul>
+
+<h3>8.2. <code>auth.js</code> — a senha-mestra com bcrypt</h3>
+<pre><code>import bcrypt from "bcrypt"
+
+export const saveNewPassword = async (authCollection, password) =&gt; {
+    const hash = bcrypt.hashSync(password, 10);
+    await authCollection.insertOne({ "type": "auth", hash })
+}
+
+export const compareHashedPassword = async (authCollection, password) =&gt; {
+    const { hash } = await authCollection.findOne({ "type": "auth" })
+    return await bcrypt.compare(password, hash);
+}</code></pre>
+<p><strong>O que faz:</strong> cria e confere a senha de acesso ao app.</p>
+<p><strong>Conceitos:</strong></p>
+<ul>
+  <li><strong>Hash</strong> é uma transformação de mão única: de <code>"1234"</code> sai algo como <code>"$2b$10$N9qo8u..."</code>. Não dá para voltar do hash para a senha. Por isso é seguro guardar o hash no banco.</li>
+  <li><strong><code>bcrypt.hashSync(password, 10)</code></strong> gera o hash. O <code>10</code> é o "custo" (quanto trabalho o computador faz — mais alto = mais seguro e mais lento).</li>
+  <li><strong><code>bcrypt.compare(senhaDigitada, hash)</code></strong> confere se a senha digitada bate com o hash guardado. Devolve <code>true</code>/<code>false</code>. Note que <strong>não</strong> existe "descriptografar" — só comparar.</li>
+  <li>Assim como as outras, essas funções <strong>recebem</strong> <code>authCollection</code> por parâmetro (regra 7.2).</li>
+</ul>
+
+<h3>8.3. <code>passwords.js</code> — a lógica das senhas (CRUD)</h3>
+<pre><code>export const getPasswords = async (passwordCollection) =&gt; {
+    return await passwordCollection.find({}).toArray();
+}
+
+export const savePassword = async (passwordCollection, source, password) =&gt; {
+    await passwordCollection.findOneAndUpdate(
+        { source },
+        { $set: { password } },
+        { returnDocument: "after", upsert: true }
+    );
+};
+
+export const deletePassword = async (passwordCollection, source) =&gt; {
+    await passwordCollection.deleteOne({ source });
+};</code></pre>
+<p>Este arquivo é o coração da lógica de senhas. <strong>CRUD</strong> = <strong>C</strong>reate, <strong>R</strong>ead, <strong>U</strong>pdate, <strong>D</strong>elete (criar, ler, atualizar, apagar).</p>
+<p><strong><code>getPasswords</code> (Read):</strong></p>
+<ul>
+  <li><code>find({})</code> → filtro vazio = "traga <strong>tudo</strong>".</li>
+  <li><code>find</code> devolve um <strong>cursor</strong> (um ponteiro preguiçoso), não a lista. O <code>.toArray()</code> percorre o cursor e monta o array de verdade.</li>
+  <li>A função <strong>retorna</strong> os dados (não imprime) — mostrar é trabalho da interface.</li>
+</ul>
+<p><strong><code>savePassword</code> (Create + Update):</strong></p>
+<ul>
+  <li><code>findOneAndUpdate(filtro, atualização, opções)</code>.</li>
+  <li><code>{ source }</code> → o filtro: procura o documento com esse <code>source</code>. (<code>{ source }</code> é atalho de <code>{ source: source }</code>.)</li>
+  <li><code>{ $set: { password } }</code> → o operador <code>$set</code> muda <strong>só</strong> o campo <code>password</code>, sem apagar o resto.</li>
+  <li><code>upsert: true</code> → <strong>up</strong>date + in<strong>sert</strong>: se já existe, atualiza; se não existe, cria. Por isso um comando só cobre "criar" e "atualizar".</li>
+  <li><code>returnDocument: "after"</code> → opção do driver (com "a" minúsculo; com maiúsculo, o Mongo ignoraria em silêncio).</li>
+</ul>
+<p><strong><code>deletePassword</code> (Delete):</strong></p>
+<ul>
+  <li><code>deleteOne({ source })</code> → apaga <strong>um</strong> documento cujo <code>source</code> bate com o filtro.</li>
+</ul>
+<p><strong>Repare:</strong> este arquivo <strong>não importa nada</strong> e não tem <code>console.log</code>/<code>prompt</code>. É lógica pura.</p>
+
+<h3>8.4. <code>index.js</code> — a interface CLI</h3>
+<p>O CLI é "só interface": ele pergunta com <code>prompt</code>, mostra com <code>console.log</code>, e delega a lógica para os módulos. Trecho representativo:</p>
+<pre><code>import { connectDB } from "./db.js";
+import { saveNewPassword, compareHashedPassword } from "./auth.js";
+import { getPasswords, savePassword } from "./passwords.js";
+import promptModule from "prompt-sync"
+const prompt = promptModule();
+
+const viewPasswords = async () =&gt; {
+    const passwords = await getPasswords(passwordCollection);   // LÓGICA (do módulo)
+    passwords.forEach(({ source, password }, index) =&gt; {         // MOSTRAR (interface)
+        console.log(`${index + 1}. ${source} =&gt; ${password}`);
+    });
+    showMenu()
+};
+
+const promptManageNewPassword = async () =&gt; {
+    const source = prompt("enter name for password: ");          // COLETAR (interface)
+    const password = prompt("enter password to save: ");
+    await savePassword(passwordCollection, source, password);    // LÓGICA (do módulo)
+    console.log(`Password for ${source} has been saved!`)
+    showMenu()
+};</code></pre>
+<p>E o "arranque" do programa, no fim do arquivo:</p>
+<pre><code>const { authCollection, passwordCollection } = await connectDB();
+
+// existe senha-mestra? "!!" transforma o resultado em true/false
+const hasPasswords = !!(await authCollection.findOne({ type: "auth" }));
+
+if (!hasPasswords) {
+    promptNewPassword();   // primeira vez: cria a senha-mestra
+} else {
+    promptOldPassword();   // já existe: pede para digitar a senha-mestra
+}</code></pre>
+<p><strong>Conceitos:</strong></p>
+<ul>
+  <li>O menu (<code>showMenu</code>) usa um <code>switch</code> para tratar as opções 1–4.</li>
+  <li><code>promptOldPassword</code> usa um laço <code>while (!verified)</code> que repete até a senha bater.</li>
+  <li><code>process.exit()</code> encerra o programa (opção "Sair").</li>
+  <li><strong>Lição de campo:</strong> toda função que fala com o banco é <code>async</code> → precisa de <code>await</code>. Esquecer o <code>await</code> faz <code>getPasswords</code> devolver uma <em>Promise</em> em vez do array, e aí <code>.forEach</code> quebra com <code>passwords.forEach is not a function</code>.</li>
+</ul>
+
+<h3>8.5. <code>server.js</code> — a interface web (Fastify)</h3>
+<p>Este arquivo é o servidor HTTP. Ele faz três coisas: <strong>serve os arquivos do front-end</strong>, <strong>liga o sistema de sessão/cookie</strong>, e <strong>define as rotas da API</strong>.</p>
+<p><strong>Preparação (imports, plugins, conexão):</strong></p>
+<pre><code>import { connectDB } from "./db.js";
+import { compareHashedPassword } from "./auth.js";
+import { getPasswords, savePassword, deletePassword } from "./passwords.js";
+import Fastify from "fastify"
+import fastifyStatic from "@fastify/static"
+import fastifyCookie from "@fastify/cookie"
+import fastifySession from "@fastify/session"
+import path from "node:path";
+import { fileURLToPath } from "node:url"
+
+const app = Fastify();
+
+// liga cookie e sessão (a ordem importa: cookie primeiro)
+app.register(fastifyCookie)
+app.register(fastifySession, {
+    secret: "uma-frase-secreta-longa-com-no-minimo-32-caracteres",
+    cookie: { secure: false },   // false porque localhost é HTTP, não HTTPS
+})
+
+const port = 3000;
+const { authCollection, passwordCollection } = await connectDB()
+
+// serve os arquivos estáticos de public/
+const _dirname = path.dirname(fileURLToPath(import.meta.url));
+app.register(fastifyStatic, {
+    root: path.join(_dirname, "..", "public"),
+});</code></pre>
+<p><strong>Pontos de atenção:</strong></p>
+<ul>
+  <li><strong><code>@fastify/cookie</code> antes de <code>@fastify/session</code></strong> — a sessão depende do cookie.</li>
+  <li><strong><code>secret</code></strong> precisa ter <strong>≥ 32 caracteres</strong>, senão o servidor nem sobe. Ele "assina" o cookie para ninguém falsificar.</li>
+  <li><strong><code>cookie: { secure: false }</code></strong> — com <code>true</code>, o navegador só manda o cookie por HTTPS; como <code>localhost</code> é HTTP, precisa ser <code>false</code> (em produção com HTTPS vira <code>true</code>).</li>
+  <li><strong><code>@fastify/static</code></strong> aponta para <code>public/</code>, então <code>http://localhost:3000/</code> entrega o <code>index.html</code>.</li>
+</ul>
+<p><strong>As rotas</strong> (detalhadas nas seções 10 e 11):</p>
+<pre><code>// LOGIN — confere a senha-mestra e "carimba a pulseira"
+app.post("/api/login", async (request, reply) =&gt; {
+    const { senha } = request.body;
+    const ok = await compareHashedPassword(authCollection, senha)
+    if (!ok) {
+        return reply.code(401).send({ ok: false, mensagem: "senha incorreta" });
+    }
+    request.session.logado = true;                    // marca a sessão como logada
+    return { ok: true, mensagem: "senha correta" };
+});
+
+// LISTAR — protegida
+app.get("/api/passwords", async (request, reply) =&gt; {
+    if (!request.session.logado) {
+        return reply.code(401).send({ ok: false, mensagem: "faça login primeiro" });
+    }
+    const senhas = await getPasswords(passwordCollection);
+    return senhas;                                    // Fastify converte o array em JSON
+});
+
+// SALVAR — protegida
+app.post("/api/passwords", async (request, reply) =&gt; {
+    if (!request.session.logado) {
+        return reply.code(401).send({ ok: false, mensagem: "faça login primeiro" });
+    }
+    const { source, password } = request.body
+    await savePassword(passwordCollection, source, password);
+    return { ok: true, mensagem: "senha salva" };
+});
+
+// APAGAR — protegida
+app.delete("/api/passwords", async (request, reply) =&gt; {
+    if (!request.session.logado) {
+        return reply.code(401).send({ ok: false, mensagem: "faça login primeiro" });
+    }
+    const { source } = request.body
+    await deletePassword(passwordCollection, source);
+    return { ok: true, mensagem: "senha apagada" }
+});
+
+// LOGOUT — joga a pulseira fora
+app.post("/api/logout", async (request, reply) =&gt; {
+    request.session.destroy();
+    return { ok: true, mensagem: "deslogado" };
+});
+
+await app.listen({ port });
+console.log(" servidor on em http://localhost:3000");</code></pre>
+<p><strong>Conceitos de rota:</strong></p>
+<ul>
+  <li><strong><code>app.post</code> / <code>app.get</code> / <code>app.delete</code></strong> são os <strong>verbos HTTP</strong>. Cada verbo carrega uma intenção: <code>GET</code> = "me dê dados", <code>POST</code> = "estou enviando dados", <code>DELETE</code> = "apague".</li>
+  <li><strong><code>request</code></strong> é o pedido que chegou (tem <code>request.body</code>, <code>request.session</code>, etc.).</li>
+  <li><strong><code>reply</code></strong> é a resposta que você monta. <code>reply.code(401)</code> define o <em>status</em> HTTP.</li>
+  <li><strong><code>request.body</code></strong> é o corpo enviado pelo front (já convertido de JSON para objeto).</li>
+  <li><strong>Retornar um objeto/array</strong> faz o Fastify <strong>serializar automaticamente para JSON</strong>.</li>
+  <li>As rotas são "fininhas": só traduzem HTTP → chamada de função da lógica. Toda a regra de negócio está nos módulos.</li>
+</ul>
+
+<h2 id="sec-9">9. O front-end em detalhe</h2>
+<p>O front-end são os arquivos de <code>public/</code>. O navegador baixa o HTML e o JS e os executa <strong>na máquina do usuário</strong>. O JS conversa com o servidor via <code>fetch</code>.</p>
+
+<h3>9.1. <code>index.html</code> + <code>config.js</code> — a tela de login</h3>
+<p><strong>HTML:</strong></p>
+<pre><code>&lt;h1&gt;digite sua senha de acesso&lt;/h1&gt;
+&lt;form id="form"&gt;
+    &lt;label for="source-senha"&gt;senha: &lt;/label&gt;
+    &lt;input type="password" id="source-senha"&gt;
+    &lt;button type="submit" id="botao"&gt;salvar&lt;/button&gt;
+&lt;/form&gt;
+&lt;h2 id="mensagem"&gt;&lt;/h2&gt;
+&lt;script src="config.js"&gt;&lt;/script&gt;</code></pre>
+<p><strong>JS (<code>config.js</code>):</strong></p>
+<pre><code>const form = document.getElementById("form")
+const mensagem = document.getElementById("mensagem");
+const input = document.getElementById("source-senha");
+
+form.addEventListener("submit", async (event) =&gt; {
+    event.preventDefault()                       // impede o form de recarregar a página
+
+    const senha = input.value                    // .value = o texto digitado
+
+    const resposta = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senha }),         // objeto vira texto JSON
+    });
+
+    const dados = await resposta.json();         // texto JSON vira objeto
+    mensagem.textContent = dados.mensagem;
+
+    if (dados.ok) {
+        window.location.href = "senhas.html";    // login certo → vai para as senhas
+    }
+});</code></pre>
+<p><strong>Conceitos:</strong></p>
+<ul>
+  <li><strong><code>document.getElementById("...")</code></strong> pega um elemento do HTML pelo seu <code>id</code>.</li>
+  <li><strong><code>addEventListener("submit", ...)</code></strong> roda uma função quando o formulário é enviado.</li>
+  <li><strong><code>event.preventDefault()</code></strong> impede o comportamento padrão do form (recarregar a página).</li>
+  <li><strong>elemento vs <code>.value</code></strong>: <code>getElementById</code> te dá a <strong>caixinha</strong> <code>&lt;input&gt;</code>; para pegar o texto digitado, use <strong><code>.value</code></strong>.</li>
+  <li><strong><code>fetch(url, opções)</code></strong> faz uma requisição HTTP a partir do navegador.</li>
+  <li><strong><code>JSON.stringify(obj)</code></strong> transforma um objeto JS em texto JSON (para enviar).</li>
+  <li><strong><code>resposta.json()</code></strong> faz o caminho inverso: texto JSON → objeto JS (para ler).</li>
+  <li><strong>await duplo:</strong> um <code>await</code> no <code>fetch</code> (esperar a resposta chegar) e outro no <code>.json()</code> (esperar ler o corpo).</li>
+  <li><strong><code>window.location.href = "..."</code></strong> navega o navegador para outra página (redirecionamento).</li>
+</ul>
+
+<h3>9.2. <code>senhas.html</code> + <code>senhas.js</code> — a tela das senhas</h3>
+<p><strong>HTML:</strong></p>
+<pre><code>&lt;h1&gt;Minhas senhas&lt;/h1&gt;
+&lt;button id="logout"&gt;encerrar sessão&lt;/button&gt;
+
+&lt;form id="form"&gt;
+    &lt;input type="text" placeholder="nome" id="source"&gt;
+    &lt;input type="password" name="password" placeholder="senha" id="senha"&gt;
+    &lt;button type="submit"&gt;salvar&lt;/button&gt;
+&lt;/form&gt;
+
+&lt;ul id="lista"&gt;&lt;/ul&gt;
+&lt;script type="module" src="senhas.js"&gt;&lt;/script&gt;</code></pre>
+<blockquote><p>Repare no <strong><code>type="module"</code></strong> no <code>&lt;script&gt;</code>. Isso é obrigatório aqui porque o <code>senhas.js</code> usa <code>await</code> no <strong>topo</strong> do arquivo (fora de qualquer função). No navegador, <code>await</code> no topo só é permitido em <strong>módulos</strong>. (No <code>config.js</code> não precisa, porque lá o <code>await</code> está dentro da função do <code>addEventListener</code>.)</p></blockquote>
+<p><strong>JS (<code>senhas.js</code>) — parte 1: listar e apagar:</strong></p>
+<pre><code>const form = document.getElementById("form")
+const lista = document.getElementById("lista")
+const inputsenha = document.getElementById("senha")
+const inputsource = document.getElementById("source")
+
+const respostas = await fetch("/api/passwords")
+
+if (!respostas.ok) {
+    window.location.href = "/"                    // 401 (sem sessão) → volta pro login
+} else {
+    const senha = await respostas.json()
+
+    senha.forEach(({ source, password }) =&gt; {
+        const li = document.createElement("li");
+        li.textContent = `${source} =&gt; ${password}`;
+
+        const botao = document.createElement("button");
+        botao.textContent = "apagar"
+        botao.addEventListener("click", async () =&gt; {
+            await fetch("/api/passwords", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ source }),  // cada botão "lembra" o seu source
+            });
+            location.reload()                      // recarrega para atualizar a lista
+        });
+
+        li.appendChild(botao)
+        lista.appendChild(li);
+    });
+}</code></pre>
+<p><strong>JS (<code>senhas.js</code>) — parte 2: salvar e sair:</strong></p>
+<pre><code>form.addEventListener("submit", async (event) =&gt; {
+    event.preventDefault()
+    const source = inputsource.value
+    const password = inputsenha.value;
+    await fetch("/api/passwords", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source, password }),
+    });
+    location.reload();
+});
+
+const botaoLogout = document.getElementById("logout");
+botaoLogout.addEventListener("click", async () =&gt; {
+    await fetch("/api/logout", { method: "POST" });
+    window.location.href = "/";
+});</code></pre>
+<p><strong>Conceitos:</strong></p>
+<ul>
+  <li><strong><code>respostas.ok</code></strong> é <code>true</code> para respostas de sucesso (status 200–299) e <code>false</code> para erro (como o 401). É o jeito limpo de perguntar "deu certo?". Se não deu, redireciona para o login.</li>
+  <li><strong>Construir a lista com o DOM:</strong> <code>document.createElement("li")</code> cria o elemento; <code>textContent</code> põe o texto; <code>appendChild</code> pendura o elemento na página.</li>
+  <li><strong><code>textContent</code> em vez de <code>innerHTML</code>:</strong> <code>textContent</code> trata o conteúdo como <strong>texto puro</strong>. Se uma senha tivesse <code>&lt;script&gt;</code>, com <code>innerHTML</code> esse script <strong>rodaria</strong> (ataque <strong>XSS</strong>); com <code>textContent</code>, não. Segurança por padrão.</li>
+  <li><strong>Closure (o detalhe esperto do botão):</strong> cada botão "apagar" é criado <strong>dentro</strong> de uma volta do <code>forEach</code>, então ele "lembra" o <code>source</code> <strong>daquela</strong> senha. Por isso o botão da linha do <code>gmail</code> apaga o <code>gmail</code>, e não outro. Uma função criada dentro de um escopo "carrega" as variáveis daquele escopo — isso é uma <strong>closure</strong>.</li>
+  <li><strong><code>location.reload()</code></strong> recarrega a página. É um jeito simples (embora "na marra") de atualizar a lista depois de salvar/apagar.</li>
+</ul>
+
+<h2 id="sec-10">10. Referência das rotas da API</h2>
+<table>
+<thead><tr><th>Método</th><th>Rota</th><th>Login?</th><th>Recebe (body)</th><th>Devolve</th></tr></thead>
+<tbody>
+<tr><td><code>POST</code></td><td><code>/api/login</code></td><td>não</td><td><code>{ senha }</code></td><td><code>{ ok, mensagem }</code> (+ cookie de sessão se acertar)</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/passwords</code></td><td><strong>sim</strong></td><td>—</td><td>array de <code>{ _id, source, password }</code></td></tr>
+<tr><td><code>POST</code></td><td><code>/api/passwords</code></td><td><strong>sim</strong></td><td><code>{ source, password }</code></td><td><code>{ ok, mensagem }</code></td></tr>
+<tr><td><code>DELETE</code></td><td><code>/api/passwords</code></td><td><strong>sim</strong></td><td><code>{ source }</code></td><td><code>{ ok, mensagem }</code></td></tr>
+<tr><td><code>POST</code></td><td><code>/api/logout</code></td><td>não</td><td>—</td><td><code>{ ok, mensagem }</code> (destrói a sessão)</td></tr>
+<tr><td><code>GET</code></td><td><code>/</code>, <code>/senhas.html</code>, <code>/config.js</code>, <code>/senhas.js</code></td><td>não</td><td>—</td><td>os arquivos de <code>public/</code> (via <code>@fastify/static</code>)</td></tr>
+</tbody>
+</table>
+<p><strong>Códigos de status usados:</strong></p>
+<ul>
+  <li><strong>200</strong> (implícito ao retornar um objeto) → deu certo.</li>
+  <li><strong>401</strong> (<code>reply.code(401)</code>) → não autorizado (senha errada ou sem sessão).</li>
+</ul>
+<p><strong>Contratos (o "combinado" entre front e back):</strong></p>
+<ul>
+  <li>Login: front envia <code>{ senha }</code>; back responde <code>{ ok, mensagem }</code>.</li>
+  <li>Senhas: <code>GET</code> devolve um array; <code>POST</code> e <code>DELETE</code> recebem os dados no body e respondem <code>{ ok, mensagem }</code>.</li>
+</ul>
+
+<h2 id="sec-11">11. O ciclo de autenticação (sessão e cookie)</h2>
+<p>Este é o conceito mais denso do projeto. A analogia do <strong>guarda-volumes / pulseira</strong> ajuda.</p>
+<h3>O problema: o HTTP tem "amnésia"</h3>
+<p>Cada requisição HTTP é independente. O servidor <strong>não lembra</strong> que você acertou a senha há cinco segundos. Para ele, todo pedido é de um estranho. Sessão + cookie resolvem isso.</p>
+<h3>As peças</h3>
+<ul>
+  <li><strong>Cookie</strong> = um pedacinho de texto que o navegador <strong>guarda</strong> (amarrado ao site) e <strong>reenvia sozinho</strong> em todo pedido. No projeto, o cookie guarda só um <strong>id de sessão</strong> (ex.: <code>sessionId</code>).</li>
+  <li><strong>Sessão</strong> = uma "gaveta" de dados do <strong>lado do servidor</strong>, identificada por aquele id. Os dados de verdade (<code>{ logado: true }</code>) ficam no servidor, não no navegador.</li>
+</ul>
+<h3>A analogia 🎟️</h3>
+<ul>
+  <li>Você deixa a mochila (os <strong>dados</strong>: <code>logado: true</code>) no balcão → fica <strong>com o servidor</strong>.</li>
+  <li>Ganha uma <strong>ficha com um número</strong> (o <strong>cookie</strong> <code>sessionId</code>) → a ficha <strong>não</strong> tem a mochila, só o número.</li>
+  <li>Ao voltar, mostra a ficha; o servidor usa o número para achar a mochila.</li>
+</ul>
+<p><strong>Frase-chave:</strong> <em>o cookie carrega só o número; os dados moram no servidor.</em></p>
+<h3>O fluxo completo</h3>
+<ol>
+  <li><strong>Login</strong> (<code>POST /api/login</code>): você envia a senha. O servidor confere com <code>bcrypt</code>.</li>
+  <li>Senha certa → o código faz <code>request.session.logado = true</code> (escreve na gaveta).</li>
+  <li>Como a sessão mudou, o <code>@fastify/session</code>: gera um <code>sessionId</code> único, guarda <code>{ logado: true }</code> no servidor sob esse id, e manda um <code>Set-Cookie: sessionId=...</code> na resposta.</li>
+  <li>O navegador <strong>guarda o cookie</strong> e, a partir daí, o <strong>reenvia automaticamente</strong> em todo pedido.</li>
+  <li><strong>Rotas protegidas</strong> (<code>/api/passwords</code>): o servidor lê o cookie, acha a sessão, e o <code>if (!request.session.logado)</code> deixa passar. Sem cookie válido → <strong>401</strong>.</li>
+  <li><strong>Logout</strong> (<code>POST /api/logout</code>): <code>request.session.destroy()</code> <strong>joga a mochila fora</strong> (apaga a sessão no servidor). A ficha velha que sobrar no navegador não vale mais nada.</li>
+</ol>
+<h3>Por que os dados ficam no servidor (segurança)</h3>
+<p>Se <code>logado: true</code> ficasse <strong>no cookie</strong>, o usuário poderia abrir o F12 e trocar para <code>true</code> sem saber a senha. Guardando no <strong>servidor</strong> e mandando só o <strong>número da ficha</strong> (ainda por cima <strong>assinado</strong> com o <code>secret</code>), ninguém falsifica o acesso. É por isso que, mesmo com o cookie ainda visível <strong>depois do logout</strong>, você continua bloqueado: a mochila no servidor foi destruída.</p>
+<h3>Detalhe prático: sessões em memória</h3>
+<p>Por padrão, o <code>@fastify/session</code> guarda as sessões <strong>na memória</strong> do servidor. Então <strong>reiniciar o servidor "esquece" todo mundo</strong> — todos precisam logar de novo. (Em produção, usa-se um armazenamento externo, como Redis, para as sessões sobreviverem a reinícios.)</p>
+
+<h2 id="sec-12">12. Glossário de conceitos</h2>
+<table>
+<thead><tr><th>Termo</th><th>O que é</th></tr></thead>
+<tbody>
+<tr><td><strong>CLI</strong></td><td><em>Command-Line Interface</em>. Programa usado pelo terminal.</td></tr>
+<tr><td><strong>GUI / Web</strong></td><td>Interface gráfica. Aqui, as telas no navegador.</td></tr>
+<tr><td><strong>Node.js</strong></td><td>Ambiente que roda JavaScript no back-end.</td></tr>
+<tr><td><strong>ESM</strong></td><td><em>ECMAScript Modules</em>: o sistema de <code>import</code>/<code>export</code>. Ligado por <code>"type":"module"</code>.</td></tr>
+<tr><td><strong><code>export</code> nomeado / default</strong></td><td>Nomeado importa com <code>{ }</code>; default importa sem <code>{ }</code>.</td></tr>
+<tr><td><strong>top-level await</strong></td><td><code>await</code> fora de função, no topo do arquivo. Só em módulos ESM.</td></tr>
+<tr><td><strong>MongoDB</strong></td><td>Banco de dados de documentos (objetos JSON).</td></tr>
+<tr><td><strong>coleção / documento</strong></td><td>Coleção = tabela; documento = uma linha (objeto JSON).</td></tr>
+<tr><td><strong>cursor</strong></td><td>Ponteiro preguiçoso de um <code>find</code>; vira lista com <code>.toArray()</code>.</td></tr>
+<tr><td><strong>CRUD</strong></td><td>Create, Read, Update, Delete.</td></tr>
+<tr><td><strong>upsert</strong></td><td>Update + insert: atualiza se existe, cria se não existe.</td></tr>
+<tr><td><strong><code>$set</code></strong></td><td>Operador do Mongo que altera só os campos indicados.</td></tr>
+<tr><td><strong>hash / bcrypt</strong></td><td>Transformação de mão única da senha; segura para guardar.</td></tr>
+<tr><td><strong>Fastify</strong></td><td>Framework web do Node usado no servidor.</td></tr>
+<tr><td><strong>rota</strong></td><td>Combinação de verbo + caminho (ex.: <code>POST /api/login</code>).</td></tr>
+<tr><td><strong>verbo HTTP</strong></td><td><code>GET</code> (ler), <code>POST</code> (enviar), <code>DELETE</code> (apagar).</td></tr>
+<tr><td><strong><code>request</code> / <code>reply</code></strong></td><td>O pedido que chega / a resposta que você monta.</td></tr>
+<tr><td><strong>status HTTP</strong></td><td>Código do resultado: 200 = ok, 401 = não autorizado.</td></tr>
+<tr><td><strong>JSON</strong></td><td>Formato de texto para trocar dados. <code>stringify</code> ↔ <code>.json()</code>.</td></tr>
+<tr><td><strong><code>fetch</code></strong></td><td>Função do navegador para fazer requisições HTTP.</td></tr>
+<tr><td><strong>DOM</strong></td><td>A árvore de elementos da página (<code>createElement</code>, <code>appendChild</code>, etc.).</td></tr>
+<tr><td><strong><code>textContent</code> vs <code>innerHTML</code></strong></td><td>Texto puro (seguro) vs HTML interpretado (pode causar XSS).</td></tr>
+<tr><td><strong>XSS</strong></td><td><em>Cross-Site Scripting</em>: injeção de script malicioso via conteúdo não tratado.</td></tr>
+<tr><td><strong>closure</strong></td><td>Função que "lembra" as variáveis do escopo onde foi criada.</td></tr>
+<tr><td><strong>cookie</strong></td><td>Texto guardado pelo navegador e reenviado automaticamente.</td></tr>
+<tr><td><strong>sessão</strong></td><td>Dados do usuário guardados no servidor, ligados a um id.</td></tr>
+<tr><td><strong>DRY</strong></td><td><em>Don't Repeat Yourself</em>: não repita regra; escreva uma vez, reutilize.</td></tr>
+<tr><td><strong>efeito colateral</strong></td><td>Ação além de calcular/devolver (ex.: imprimir, perguntar).</td></tr>
+</tbody>
+</table>
+
+<h2 id="sec-13">13. Dívidas técnicas e próximos passos</h2>
+<p>Coisas conhecidas que ainda podem melhorar (ótimos exercícios de estudo):</p>
+<ul>
+  <li><strong>Senhas guardadas em texto puro.</strong> As senhas dos serviços estão no banco <strong>sem criptografia</strong>. O ideal seria criptografia <strong>reversível</strong> (diferente do hash da senha-mestra, que é de mão única, porque a senha do serviço precisa ser lida de volta).</li>
+  <li><strong>Checagem de login repetida.</strong> O <code>if (!request.session.logado)</code> está copiado nas três rotas. Dá para juntar num "porteiro" único usando um <strong>hook <code>preHandler</code></strong> do Fastify.</li>
+  <li><strong>Atualizar a tela sem recarregar.</strong> Hoje, salvar/apagar usa <code>location.reload()</code>. Uma versão mais elegante adicionaria/removeria só o <code>&lt;li&gt;</code> afetado.</li>
+  <li><strong>Faxina.</strong> Renomear <code>public/config.js</code> para algo como <code>login.js</code> (o nome atual é enganoso) e remover eventuais arquivos de rascunho.</li>
+  <li><strong>Nomes consistentes no front.</strong> No <code>senhas.js</code>, a variável que recebe o array chama-se <code>senha</code> (singular); <code>senhas</code> seria mais descritivo para uma lista.</li>
+</ul>
+
+<hr>
+<p class="footer">Documento gerado a partir do código real do projeto, para fins de estudo dos conceitos de back-end e front-end aplicados na migração de CLI para Web.</p>
+
+</main>
+</body>
+</html>
