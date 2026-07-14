@@ -1,0 +1,9 @@
+# Ignorar node_modules em qualquer lugar do repositório
+node_modules
+**/node_modules
+gerenciador_app/node_modules
+
+# Dependências/bins locais e arquivos de sistema que não devem ser processados
+.bundle
+vendor/bundle
+.DS_Store
