@@ -1,4 +1,2 @@
-
-node_modules**/node_modules gerenciador_app/node_modules
-
-.bundle vendor/bundle.DS_Store
+node_modules **/node_modules gerenciador_app/node_modules
+.bundle vendor/bundle .DS_Store
